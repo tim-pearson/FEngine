@@ -8,13 +8,10 @@ mat4 trs[];
 
 void main()
 {
-    mat4 translateMatrix = mat4(
-        1.0, 0.0, 0.0, 0.0,   // First column (x-axis)
-        0.0, 1.0, 0.0, 1.0,   // Second column (y-axis)
-        0.0, 0.0, 1.0, 0.0,   // Third column (z-axis)
-        0.0, 0.0, 0.0, 1.0    // Fourth column (translation)
-    );
-    trs[gl_WorkGroupID.x] =  translateMatrix * trs[gl_WorkGroupID.x]
-
+    const float g = 9.81;
+    const float mass = 0.01;
+    vec4 translate = trs[gl_WorkGroupID.x][3];
+    translate.y = max(-g * mass + translate.y, -20.0);
+    trs[gl_WorkGroupID.x][3] = translate;
 }
 
