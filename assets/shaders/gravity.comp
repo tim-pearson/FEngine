@@ -6,12 +6,19 @@ layout(binding = 0) buffer transforms{
 mat4 trs[];
 };
 
+uniform vec3 ubound;
+uniform vec3 lbound;
+
+
 void main()
 {
     const float g = 9.81;
-    const float mass = 0.01;
+    const float mass = 0.1;
     vec4 translate = trs[gl_WorkGroupID.x][3];
-    translate.y = max(-g * mass + translate.y, -20.0);
+
+    translate.x = clamp(translate.x, lbound.x, ubound.x);
+    translate.y = clamp(-g * mass + translate.y, lbound.y, ubound.y);
+    translate.z = clamp(translate.z, lbound.z, ubound.z);
     trs[gl_WorkGroupID.x][3] = translate;
 }
 
