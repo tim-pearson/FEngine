@@ -3,11 +3,14 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-layout(binding = 0) buffer transforms{
+layout(binding = 0) buffer Transforms{
     mat4 trs[];
 };
-layout(binding = 1) buffer velocities{
+layout(binding = 1) buffer Velocities{
     vec4 vels[];
+};
+layout(binding = 2) buffer Colors{
+    vec4 colors[];
 };
 
 
@@ -15,12 +18,14 @@ uniform vec3 ubound;
 uniform vec3 lbound;
 uniform float deltaTime;
 
+uniform float radius;
+
 const float mass = 2;
+const float pressureMultiplier = 300.0f;
 
 float densityToPressure(float density)
 {
    const float targeted = 2.75; 
-   const float pressureMultiplier = 500.0f;
    return abs(density - targeted) * pressureMultiplier;
 }
 
@@ -65,7 +70,6 @@ void main()
     // CONSTANTS
     const float restitutionCoeff = 0.9;
     const float g = 9.81;
-    const float radius = 1;
     
     //ID
     const uint id = gl_WorkGroupID.x;
@@ -80,12 +84,13 @@ void main()
         vec3 other = trs[i][3].xyz;
         float dst = length(other.xyz - t.xyz);
         vec3 dir = dst == 0 ? normalize(vec3(1.0f)) : ((other.xyz - t.xyz) / dst);
-        float slope = smoothingDerivative(dst, radius);
+        float slope = smoothingDerivative(radius, dst);
         float density = calculateDensity(other, radius);
         float sharedPressure = calculateSharedPressure(density, particuleDensity);
         pressure += sharedPressure * dir * slope * mass / density;
     }
 
+    colors[id] = vec4(densityToPressure(particuleDensity) / pressureMultiplier * normalize(vec3(1.0f)), 1.0f);
 
     vec4 vel = vels[id];
     //vel += vec4(0.0f, -1.0f, 0.0f, 1.0f) * g * deltaTime;
@@ -112,6 +117,7 @@ void main()
        t.y = ubound.y;
        vel.y *= -restitutionCoeff;
     }
+    t.z = ubound.z;
     t.w = 1;
 
 
