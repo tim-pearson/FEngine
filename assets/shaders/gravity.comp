@@ -17,29 +17,27 @@ uniform float deltaTime;
 
 float densityToPressure(float density)
 {
-   const float targeted = 1.0f; 
+   const float targeted = 1.75f; 
    const float pressureMultiplier = 100.0f;
-   return (density - targeted) * pressureMultiplier;
+   return abs(density - targeted) * pressureMultiplier;
 }
 
 float smoothing(float radius, float dst)
 {
-    float volume = PI * pow(radius, 8) / 4;
-    float val = max(0, radius * radius - dst * dst);
-    return val * val * val / volume;
+    if (dst >= radius) return 0;
+    float volume = PI * pow(radius, 4) / 6;
+    float val = (radius - dst) * (radius - dst);
+    return val / volume;
 }
 
 float smoothingDerivative(float radius, float dst)
 {
     if (dst >= radius)
         return 0.0f;
-    float f = radius * radius - dst * dst;
-    float scale = -24 /(pow(radius, 8) * PI);
-    return scale * dst * f *f;
-
+    float scale = 12 /(pow(radius, 4) * PI);
+    return (dst - radius) * scale;
 
 }
-
 float calculateDensity(vec3 point, float radius)
 {
     float density = 0;
@@ -63,8 +61,7 @@ void main()
     const float mass = 1;
     const float restitutionCoeff = 0.7;
     const float g = 9.81;
-    const float radius = 1;
-    const float pressureMultiplier = 1.0f;
+    const float radius = 0.3;
     
     //ID
     const uint id = gl_WorkGroupID.x;
@@ -80,13 +77,13 @@ void main()
         vec3 dir = dst == 0 ? normalize(vec3(1.0f)) : ((other.xyz - translate.xyz) / dst);
         float slope = smoothingDerivative(dst, radius);
         float density = calculateDensity(other, radius);
-        pressure += -densityToPressure(density) * dir * slope * mass / density;
+        pressure += densityToPressure(density) * dir * slope * mass / density;
     }
 
 
     vec4 vel = vels[id];
     //vel += vec4(0.0f, -1.0f, 0.0f, 1.0f) * g * deltaTime;
-    vel -= vec4(pressure.xyz, 1.0f) * deltaTime / calculateDensity(translate.xyz, radius);
+    vel += vec4(pressure.xyz, 1.0f) * deltaTime / calculateDensity(translate.xyz, radius);
     vec4 cur = translate + vel * deltaTime;
     translate = clamp(cur, vec4(lbound, 1.0), vec4(ubound, 1.0));
 
