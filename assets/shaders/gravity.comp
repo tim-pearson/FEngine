@@ -17,12 +17,16 @@ uniform float deltaTime;
 
 void main()
 {
+    const float restitutionCoeff = 0.7;
     const float g = 9.81;
     const uint id = gl_WorkGroupID.x;
     vec4 translate = trs[id][3];
     vec4 vel = vels[id];
     vel += vec4(0.0f, -1.0f, 0.0f, 1.0f) * g * deltaTime;
-    translate = clamp(translate + vel * deltaTime, vec4(lbound, 1), vec4(ubound, 1));
+    vec4 cur = translate + vel * deltaTime;
+    translate = clamp(cur, vec4(lbound, 1.0), vec4(ubound, 1.0));
+    if (cur.xyz != translate.xyz)
+        vel *= -restitutionCoeff;
     vels[id] = vel;
     trs[id][3] = translate;
 }
