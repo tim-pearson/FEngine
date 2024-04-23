@@ -71,7 +71,7 @@ void main()
     // CONSTANTS
     const float restitutionCoeff = 0.9;
     const float g = 9.81;
-    const float inputForce = 20.0f;
+    const float inputForce = 2.0f;
     
     //ID
     const uint id = gl_WorkGroupID.x;
@@ -100,7 +100,7 @@ void main()
     vel += vec4(pressure.xyz, 1.0f) * deltaTime / particuleDensity;
     vec3 interactVec = interaction - t.xyz;
     if (inputState != 0 && length(interactVec) <= radius * 2.0f)
-        vel += vec4(normalize(interactVec) * inputState * inputForce, 0.0f);
+        vel += vec4(normalize(interactVec) * inputState * length(interactVec), 0.0f);
     t += vel * deltaTime;
 
     if( t.x < lbound.x)
