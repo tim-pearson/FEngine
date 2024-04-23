@@ -1,4 +1,5 @@
 #version 430 core
+#define PI 3.1415926538
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
@@ -14,19 +15,84 @@ uniform vec3 ubound;
 uniform vec3 lbound;
 uniform float deltaTime;
 
+float densityToPressure(float density)
+{
+   const float targeted = 1.0f; 
+   const float pressureMultiplier = 100.0f;
+   return (density - targeted) * pressureMultiplier;
+}
+
+float smoothing(float radius, float dst)
+{
+    float volume = PI * pow(radius, 8) / 4;
+    float val = max(0, radius * radius - dst * dst);
+    return val * val * val / volume;
+}
+
+float smoothingDerivative(float radius, float dst)
+{
+    if (dst >= radius)
+        return 0.0f;
+    float f = radius * radius - dst * dst;
+    float scale = -24 /(pow(radius, 8) * PI);
+    return scale * dst * f *f;
+
+
+}
+
+float calculateDensity(vec3 point, float radius)
+{
+    float density = 0;
+    const float mass = 1;
+
+    for(int i =0 ; i < gl_NumWorkGroups.x; i++)
+    {
+        vec3 pos = trs[i][3].xyz;
+        float dst = length(pos - point);
+        float influence = smoothing(radius, dst);
+        density += mass * influence;
+    }
+    return density;
+}
+
+
 
 void main()
 {
+    // CONSTANTS
+    const float mass = 1;
     const float restitutionCoeff = 0.7;
     const float g = 9.81;
+    const float radius = 1;
+    const float pressureMultiplier = 1.0f;
+    
+    //ID
     const uint id = gl_WorkGroupID.x;
     vec4 translate = trs[id][3];
+
+    vec3 pressure = vec3(0);
+    for (int i = 0; i < gl_NumWorkGroups.x; i++)
+    {
+        if (i == id)
+            continue;
+        vec3 other = trs[i][3].xyz;
+        float dst = length(other.xyz - translate.xyz);
+        vec3 dir = dst == 0 ? normalize(vec3(1.0f)) : ((other.xyz - translate.xyz) / dst);
+        float slope = smoothingDerivative(dst, radius);
+        float density = calculateDensity(other, radius);
+        pressure += -densityToPressure(density) * dir * slope * mass / density;
+    }
+
+
     vec4 vel = vels[id];
-    vel += vec4(0.0f, -1.0f, 0.0f, 1.0f) * g * deltaTime;
+    //vel += vec4(0.0f, -1.0f, 0.0f, 1.0f) * g * deltaTime;
+    vel -= vec4(pressure.xyz, 1.0f) * deltaTime / calculateDensity(translate.xyz, radius);
     vec4 cur = translate + vel * deltaTime;
     translate = clamp(cur, vec4(lbound, 1.0), vec4(ubound, 1.0));
+
     if (cur.xyz != translate.xyz)
         vel *= -restitutionCoeff;
+
     vels[id] = vel;
     trs[id][3] = translate;
 }
