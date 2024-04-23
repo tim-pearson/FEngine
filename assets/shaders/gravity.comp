@@ -15,11 +15,11 @@ uniform vec3 ubound;
 uniform vec3 lbound;
 uniform float deltaTime;
 
-const float mass = 1;
+const float mass = 2;
 
 float densityToPressure(float density)
 {
-   const float targeted = 2; 
+   const float targeted = 2.75; 
    const float pressureMultiplier = 500.0f;
    return abs(density - targeted) * pressureMultiplier;
 }
@@ -94,28 +94,28 @@ void main()
 
     if( t.x < lbound.x)
     {
-       t.x = lbound.x - vel.x * deltaTime; 
+       t.x = lbound.x;
        vel.x *= -restitutionCoeff;
     }
     else if( t.x > ubound.x)
     {
-       t.x = ubound.x - vel.x * deltaTime; 
+       t.x = ubound.x;
        vel.x *= -restitutionCoeff;
     }
     if( t.y < lbound.y)
     {
-       t.y = lbound.y - vel.y * deltaTime; 
+       t.y = lbound.y;
        vel.y *= -restitutionCoeff;
     }
     else if( t.y > ubound.y)
     {
-       t.y = ubound.y - vel.y * deltaTime; 
+       t.y = ubound.y;
        vel.y *= -restitutionCoeff;
     }
     t.w = 1;
 
 
-    vels[id] = vel * 0.999;
+    vels[id] = vel * 0.99;
     trs[id][3] = t;
 }
 
