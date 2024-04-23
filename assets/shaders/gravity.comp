@@ -30,14 +30,6 @@ float densityToPressure(float density)
    return abs(density - targeted) * pressureMultiplier;
 }
 
-float smoothing(float radius, float dst)
-{
-    if (dst >= radius) return 0;
-    float volume = PI * pow(radius, 4) / 6;
-    float val = (radius - dst) * (radius - dst);
-    return val / volume;
-}
-
 float smoothingDerivative(float radius, float dst)
 {
     if (dst >= radius)
@@ -45,19 +37,6 @@ float smoothingDerivative(float radius, float dst)
     float scale = 12 /(pow(radius, 4) * PI);
     return (dst - radius) * scale;
 
-}
-float calculateDensity(vec3 point, float radius)
-{
-    float density = 0;
-
-    for(int i =0 ; i < gl_NumWorkGroups.x; i++)
-    {
-        vec3 pos = trs[i][3].xyz;
-        float dst = length(pos - point);
-        float influence = smoothing(radius, dst);
-        density += mass * influence;
-    }
-    return density;
 }
 float calculateSharedPressure(float a, float b)
 {
@@ -76,7 +55,7 @@ void main()
     //ID
     const uint id = gl_WorkGroupID.x;
     vec4 t = trs[id][3];
-    float particuleDensity = calculateDensity(t.xyz, radius);
+    float particuleDensity = vels[id].w;
 
     vec3 pressure = vec3(0);
     for (int i = 0; i < gl_NumWorkGroups.x; i++)
@@ -87,7 +66,7 @@ void main()
         float dst = length(other.xyz - t.xyz);
         vec3 dir = dst == 0 ? normalize(vec3(1.0f)) : ((other.xyz - t.xyz) / dst);
         float slope = smoothingDerivative(radius, dst);
-        float density = calculateDensity(other, radius);
+        float density = vels[i].w;
         float sharedPressure = calculateSharedPressure(density, particuleDensity);
         pressure += sharedPressure * dir * slope * mass / density;
     }
