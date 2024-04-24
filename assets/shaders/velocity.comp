@@ -106,32 +106,28 @@ void main()
     if( t.x <= lbound.x)
     {
        t.x = lbound.x;
-       vel.x += 4;
-       //vel.x *= -restitutionCoeff;
+       vel.x *= -restitutionCoeff;
     }
     else if( t.x >= ubound.x)
     {
        t.x = ubound.x;
-       vel.x -= 4;
-       //vel.x *= -restitutionCoeff;
+       vel.x *= -restitutionCoeff;
     }
     if( t.y <= lbound.y)
     {
        t.y = lbound.y;
-       vel.y += 4;
-       //vel.y *= -restitutionCoeff;
+       vel.y *= -restitutionCoeff;
     }
     else if( t.y >= ubound.y)
     {
        t.y = ubound.y;
-       vel.y -= 4;
-       //vel.y *= -restitutionCoeff;
+       vel.y *= -restitutionCoeff;
     }
     t.z = ubound.z;
     t.w = 1;
 
 
-    vels[id] = vel * 0.95;
+    vels[id] = vel * 0.97;
     trs[id][3] = t;
 }
 
