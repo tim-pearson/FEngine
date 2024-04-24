@@ -20,14 +20,22 @@ uniform float deltaTime;
 uniform float radius;
 uniform vec3 interaction;
 uniform int inputState;
-uniform float mass;
 
-const float pressureMultiplier = 2.0f;
-const float targeted = 1.5; 
+const float mass = 2;
+const float pressureMultiplier = 500.0f;
 
 float densityToPressure(float density)
 {
+   const float targeted = 2.75; 
    return abs(density - targeted) * pressureMultiplier;
+}
+
+float smoothing(float radius, float dst)
+{
+    if (dst >= radius) return 0;
+    float volume = PI * pow(radius, 4) / 6;
+    float val = (radius - dst) * (radius - dst);
+    return val / volume;
 }
 
 float smoothingDerivative(float radius, float dst)
@@ -37,6 +45,19 @@ float smoothingDerivative(float radius, float dst)
     float scale = 12 /(pow(radius, 4) * PI);
     return (dst - radius) * scale;
 
+}
+float calculateDensity(vec3 point, float radius)
+{
+    float density = 0;
+
+    for(int i =0 ; i < gl_NumWorkGroups.x; i++)
+    {
+        vec3 pos = trs[i][3].xyz;
+        float dst = length(pos - point);
+        float influence = smoothing(radius, dst);
+        density += mass * influence;
+    }
+    return density;
 }
 float calculateSharedPressure(float a, float b)
 {
@@ -48,25 +69,25 @@ float calculateSharedPressure(float a, float b)
 void main()
 {
     // CONSTANTS
-    const float restitutionCoeff = 0.95;
+    const float restitutionCoeff = 0.9;
     const float g = 9.81;
     const float inputForce = 2.0f;
     
     //ID
     const uint id = gl_WorkGroupID.x;
     vec4 t = trs[id][3];
-    float particuleDensity = vels[id].w;
+    float particuleDensity = calculateDensity(t.xyz, radius);
 
     vec3 pressure = vec3(0);
     for (int i = 0; i < gl_NumWorkGroups.x; i++)
     {
         if (i == id)
             continue;
-        vec3 other = trs[i][3].xyz + vels[i].xyz * deltaTime;
+        vec3 other = trs[i][3].xyz;
         float dst = length(other.xyz - t.xyz);
         vec3 dir = dst == 0 ? normalize(vec3(1.0f)) : ((other.xyz - t.xyz) / dst);
         float slope = smoothingDerivative(radius, dst);
-        float density = vels[i].w;
+        float density = calculateDensity(other, radius);
         float sharedPressure = calculateSharedPressure(density, particuleDensity);
         pressure += sharedPressure * dir * slope * mass / density;
     }
@@ -75,7 +96,7 @@ void main()
     colors[id] = vec4(vec3(length(t.xyz - interaction)), 1.0f);
 
     vec4 vel = vels[id];
-    //vel += vec4(0.0f, -1.0f, 0.0f, 1.0f) * mass * g * deltaTime;
+    //vel += vec4(0.0f, -1.0f, 0.0f, 1.0f) * g * deltaTime;
     vel += vec4(pressure.xyz, 1.0f) * deltaTime / particuleDensity;
     vec3 interactVec = interaction - t.xyz;
     if (inputState != 0 && length(interactVec) <= radius * 2.0f)
@@ -106,7 +127,7 @@ void main()
     t.w = 1;
 
 
-    vels[id] = vel /** 0.99*/;
+    vels[id] = vel * 0.95;
     trs[id][3] = t;
 }
 
