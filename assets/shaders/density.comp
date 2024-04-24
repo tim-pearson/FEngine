@@ -18,7 +18,7 @@ uniform float deltaTime;
 float smoothing(float radius, float dst)
 {
     if (dst >= radius) return 0;
-    float volume = PI * pow(radius, 4) / 6;
+    float volume = PI * pow(radius, 4) / 6.0f;
     float val = (radius - dst) * (radius - dst);
     return val / volume;
 }
@@ -33,7 +33,7 @@ float calculateDensity(vec3 point, float radius)
         vec3 pos = trs[i][3].xyz; //+ vels[i].xyz * deltaTime;
         float dst = length(point - pos);
         float influence = smoothing(radius, dst);
-        density += 1.0f * influence;
+        density += mass * influence;
     }
     return density;
 }
@@ -43,4 +43,5 @@ void main()
 {
     uint id =  gl_WorkGroupID.x;
     vels[id].w = calculateDensity(trs[id][3].xyz + vels[id].xyz * deltaTime, radius);
+    vels[id].w = 2.0f;
 }
