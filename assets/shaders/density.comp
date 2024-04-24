@@ -31,9 +31,9 @@ float calculateDensity(vec3 point, float radius)
     for(int i =0 ; i < gl_NumWorkGroups.x; i++)
     {
         vec3 pos = trs[i][3].xyz; //+ vels[i].xyz * deltaTime;
-        float dst = length(pos - point);
+        float dst = length(point - pos);
         float influence = smoothing(radius, dst);
-        density += mass * influence;
+        density += 1.0f * influence;
     }
     return density;
 }
