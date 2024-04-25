@@ -43,5 +43,4 @@ void main()
 {
     uint id =  gl_WorkGroupID.x;
     vels[id].w = calculateDensity(trs[id][3].xyz + vels[id].xyz * deltaTime, radius);
-    vels[id].w = 2.0f;
 }

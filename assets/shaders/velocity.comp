@@ -143,7 +143,7 @@ void main()
        vel.y *= -restitutionCoeff;
     }
     t.z = ubound.z;
-    t.w = 1;
+    t.w = 1.0;
 
 
     vels[id] = vel * 0.97;
